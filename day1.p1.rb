@@ -16,7 +16,7 @@ total_distance = 0
 list1.each.with_index(0) do |item, index|
   distance = (item - list2[index]).abs
   total_distance += distance
-  puts "#{item} #{list2[index]} #{distance} #{total_distance}"
+  #puts "#{item} #{list2[index]} #{distance} #{total_distance}"
 end
 
 puts total_distance
