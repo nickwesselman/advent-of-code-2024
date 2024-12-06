@@ -98,7 +98,7 @@ class Grid
       self.turn_right
     end
 
-    visited_status = self.grid[self.position.x][self.position.y].visited
+    visited_status = new_location.visited
     if visited_status[self.orientation]
       #puts "ALREADY VISITED [#{self.position.x},#{self.position.y}] for #{self.orientation} (#{visited_status})"
       return StepResult::VISITED_SAME_DIRECTION
