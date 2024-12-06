@@ -187,19 +187,19 @@ class Day6
     grid = read_grid(input_lines)
     start_position = grid.position
 
-    puts "#{grid.print}\n\n"
-
     # run through with original map
     while grid.step != StepResult::STEPPED_OFF
     end
 
+    tested = 0
     potential_obstacles = []
     grid.grid.each.with_index do |column,x|
       column.each.with_index do |location,y|
-        # skip existing blocks, start position, and unvisited positions
-        if location.blocked || (x == start_position.x && y == start_position.y) || !location.visited.any?
+        # skip start position, and unvisited positions
+        if x == start_position.x && y == start_position.y || !location.visited.any?
           next
         end
+        tested += 1
         copy = read_grid(input_lines)
         copy.grid[x][y].block_added = true
         #puts "#{copy.print}\n\n"
@@ -215,7 +215,7 @@ class Day6
         end
       end
     end
-    puts "#{potential_obstacles}"
+    puts "#{potential_obstacles.length} found in #{tested} tests"
     return potential_obstacles.length
   end
 end
