@@ -4,10 +4,16 @@ SYMBOL_BLOCKED = "#"
 SYMBOL_GUARD_POSITION = "^"
 
 module Orientation
-  UP = 1
-  RIGHT = 2
-  DOWN = 3
-  LEFT = 4
+  UP = 0
+  RIGHT = 1
+  DOWN = 2
+  LEFT = 3
+end
+
+module StepResult
+  SUCCESS = 0
+  VISITED_SAME_DIRECTION = 1
+  STEPPED_OFF = 2
 end
 
 class Position
@@ -22,11 +28,13 @@ end
 
 class GridLocation
   attr_accessor :blocked
+  attr_accessor :block_added
   attr_accessor :visited
 
   def initialize
     @blocked = false
-    @visited = false
+    @block_added = false
+    @visited = Array.new(4) { false }
   end
 end
 
@@ -53,9 +61,16 @@ class Grid
         location.blocked = true
       when SYMBOL_GUARD_POSITION
         self.position = Position.new(index, self.grid[index].length-1)
-        location.visited = true
+        location.visited[self.orientation] = true
       end
     end
+  end
+
+  def get_location(position)
+    if position.x < 0 || position.x >= self.grid.length || position.y < 0 || position.y >= self.grid[0].length
+      return nil
+    end
+    return self.grid[position.x][position.y]
   end
 
   def step
@@ -71,27 +86,37 @@ class Grid
       move_x = -1
     end
     self.position = Position.new(self.position.x + move_x,self.position.y + move_y)
-    if self.grid[self.position.x].nil? || self.grid[self.position.x][self.position.y].nil?
+    new_location = get_location(self.position)
+    if !new_location
       #stepped off
-      return false
+      return StepResult::STEPPED_OFF
     end
-    self.grid[self.position.x][self.position.y].visited = true
+
     next_step = Position.new(self.position.x + move_x,self.position.y + move_y)
-    if !self.grid[next_step.x].nil? && !self.grid[next_step.x][next_step.y].nil? && self.grid[next_step.x][next_step.y].blocked
+    next_step_location = get_location(next_step)
+    if next_step_location && (next_step_location.blocked || next_step_location.block_added)
       self.turn_right
     end
-    return true
+
+    visited_status = self.grid[self.position.x][self.position.y].visited
+    if visited_status[self.orientation]
+      #puts "ALREADY VISITED [#{self.position.x},#{self.position.y}] for #{self.orientation} (#{visited_status})"
+      return StepResult::VISITED_SAME_DIRECTION
+    else
+      visited_status[self.orientation] = true
+      return StepResult::SUCCESS
+    end
   end
 
   def turn_right
     @orientation += 1
-    if @orientation > 4
+    if @orientation > 3
       @orientation = Orientation::UP
     end
   end
 
   def visited_locations
-    self.grid.flatten.sum { |location| location.visited ? 1 : 0 }
+    self.grid.flatten.sum { |location| location.visited.any? ? 1 : 0 }
   end
 
   def print
@@ -110,8 +135,18 @@ class Grid
           end
         elsif location.blocked
           '#'
-        elsif location.visited
-          'X'
+        elsif location.block_added
+          '0'
+        elsif location.visited.any?
+          visited_vertical = location.visited[Orientation::UP] || location.visited[Orientation::DOWN]
+          visited_horizontal = location.visited[Orientation::LEFT] || location.visited[Orientation::RIGHT]
+          if visited_vertical && visited_horizontal
+            '+'
+          elsif visited_vertical
+            '|'
+          else
+            '-'
+          end
         else
           '.'
         end
@@ -127,10 +162,10 @@ class Day6
       grid.add_row(line.strip)
     end
     steps = 0
-    puts grid.print
-    puts "\n"
-    while grid.step
+    puts "#{grid.print}\n\n"
+    while grid.step != StepResult::STEPPED_OFF
       steps += 1
+      # Uncommenting this unintentionally creates a sweet animation
       #puts "Step #{steps}"
       #puts grid.print
       #puts "\n"
@@ -138,20 +173,86 @@ class Day6
     puts grid.print
     return grid.visited_locations
   end
+
+  def read_grid (input_lines)
+    grid = Grid.new
+    input_lines.each do |line|
+      grid.add_row(line.strip)
+    end
+    return grid
+  end
+
+  def part_two (input)
+    input_lines = input.readlines
+    grid = read_grid(input_lines)
+    start_position = grid.position
+
+    puts "#{grid.print}\n\n"
+
+    # run through with original map
+    while grid.step != StepResult::STEPPED_OFF
+    end
+
+    potential_obstacles = []
+    grid.grid.each.with_index do |column,x|
+      column.each.with_index do |location,y|
+        # skip existing blocks, start position, and unvisited positions
+        if location.blocked || (x == start_position.x && y == start_position.y) || !location.visited.any?
+          next
+        end
+        copy = read_grid(input_lines)
+        copy.grid[x][y].block_added = true
+        #puts "#{copy.print}\n\n"
+        loop do
+          result = copy.step
+          if result == StepResult::STEPPED_OFF
+            break
+          elsif result == StepResult::VISITED_SAME_DIRECTION
+            #puts "#{copy.print}\n\n"
+            potential_obstacles << [x, y]
+            break
+          end
+        end
+      end
+    end
+    puts "#{potential_obstacles}"
+    return potential_obstacles.length
+  end
 end
 
 class Day6Test < Test::Unit::TestCase
   def test_part_one_example
     day6 = Day6.new
     result = day6.part_one(File.open("day6.example.txt"))
-    puts "EXAMPLE RESULT: #{result}"
+    puts "P1 EXAMPLE RESULT: #{result}"
     assert_equal(41, result)
   end
 
   def test_part_one
     day6 = Day6.new
     result = day6.part_one(File.open("day6.input.txt"))
-    puts "RESULT: #{result}"
-    puts assert(result > 0)
+    puts "P1 RESULT: #{result}"
+    assert(result > 0)
+  end
+
+  def test_part_two_example
+    day6 = Day6.new
+    result = day6.part_two(File.open("day6.example.txt"))
+    puts "P2 EXAMPLE RESULT: #{result}"
+    assert_equal(6, result)
+  end
+
+  def test_part_two_test
+    day6 = Day6.new
+    result = day6.part_two(File.open("day6.test.txt"))
+    puts "P2 TEST RESULT: #{result}"
+    assert_equal(1, result)
+  end
+
+  def test_part_two
+    day6 = Day6.new
+    result = day6.part_two(File.open("day6.input.txt"))
+    puts "P2 RESULT: #{result}"
+    assert(result > 0)
   end
 end
