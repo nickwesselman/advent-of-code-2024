@@ -73,9 +73,9 @@ class Grid
     return self.grid[position.x][position.y]
   end
 
-  def step
+  def next_position(position,orientation)
     move_x, move_y = [0,0]
-    case @orientation
+    case orientation
     when Orientation::UP
       move_y = -1
     when Orientation::RIGHT
@@ -85,16 +85,21 @@ class Grid
     when Orientation::LEFT
       move_x = -1
     end
-    self.position = Position.new(self.position.x + move_x,self.position.y + move_y)
+    return Position.new(self.position.x + move_x,self.position.y + move_y)
+  end
+
+  def step
+    self.position = next_position(self.position,self.orientation)
     new_location = get_location(self.position)
     if !new_location
       #stepped off
       return StepResult::STEPPED_OFF
     end
 
-    next_step = Position.new(self.position.x + move_x,self.position.y + move_y)
-    next_step_location = get_location(next_step)
-    if next_step_location && (next_step_location.blocked || next_step_location.block_added)
+    loop do
+      next_step = next_position(self.position,self.orientation)
+      next_step_location = get_location(next_step)
+      break unless next_step_location && (next_step_location.blocked || next_step_location.block_added)
       self.turn_right
     end
 
