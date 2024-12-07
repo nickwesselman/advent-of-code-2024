@@ -1,4 +1,6 @@
 require "test/unit"
+require 'rainbow/refinement'
+using Rainbow
 
 SYMBOL_BLOCKED = "#"
 SYMBOL_GUARD_POSITION = "^"
@@ -130,16 +132,16 @@ class Grid
         if x == self.position.x && y == self.position.y
           case self.orientation
           when Orientation::UP
-            '^'
+            "^".cyan
           when Orientation::RIGHT
-            '>'
+            ">".cyan
           when Orientation::LEFT
-            '<'
+            "<".cyan
           when Orientation::DOWN
-            '⌄'
+            "⌄".cyan
           end
         elsif location.blocked
-          '#'
+          "#".red
         elsif location.block_added
           '0'
         elsif location.visited.any?
@@ -153,7 +155,7 @@ class Grid
             '-'
           end
         else
-          '.'
+          ".".green
         end
       }.join
     }.join("\n")
@@ -171,7 +173,7 @@ class Day6
     while grid.step != StepResult::STEPPED_OFF
       steps += 1
       # Uncommenting this unintentionally creates a sweet animation
-      #puts "Step #{steps}"
+      #puts "\033[2J"
       #puts grid.print
       #puts "\n"
     end
@@ -208,7 +210,11 @@ class Day6
         copy = read_grid(input_lines)
         copy.grid[x][y].block_added = true
         #puts "#{copy.print}\n\n"
+
         loop do
+          #puts "\033[2J"
+          #puts copy.print
+          #sleep 0.5
           result = copy.step
           if result == StepResult::STEPPED_OFF
             break
@@ -220,7 +226,7 @@ class Day6
         end
       end
     end
-    puts "#{potential_obstacles.length} found in #{tested} tests"
+    #puts "#{potential_obstacles.length} found in #{tested} tests"
     return potential_obstacles.length
   end
 end
