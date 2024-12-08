@@ -1,0 +1,15 @@
+GEM
+  specs:
+    power_assert (2.0.3)
+    test-unit (3.6.1)
+      power_assert
+
+PLATFORMS
+  arm64-darwin-24
+  ruby
+
+DEPENDENCIES
+  test-unit
+
+BUNDLED WITH
+   2.5.22
